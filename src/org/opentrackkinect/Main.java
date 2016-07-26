@@ -14,6 +14,8 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -33,236 +35,277 @@ public class Main {
 	static Skeleton skeletons[] = new Skeleton[6];
 	static float X, Y, Z;
 	static Kinect myKinect;
-    static JLabel label1 = new JLabel("x : " + "0");
-    static JLabel label2 = new JLabel("y : " + "0");
-    static JLabel label3 = new JLabel("z : " + "0");
-    static JLabel xraw  = new JLabel("xraw : ");
-    static JLabel yraw  = new JLabel("yraw : ");
-    static JLabel zraw  = new JLabel("zraw : ");
-    static float MX = 100;
-    static float MY = 100;
-    static float MZ = 100;
-    static float DX = 0;
-    static float DY = 0;
-    static float DZ = 0;
-    static final int M_MIN = 0;
-    static final int M_MAX = 200;
-    static int MX_INIT = 100;
-    static int MY_INIT = 100;
-    static int MZ_INIT = 100;
-    static int DX_INIT = 0;
-    static int DY_INIT = 0;
-    static int DZ_INIT = 0;
-    static final int D_MIN = -300;
-    static final int D_MAX = 300;
-    static final String addr = "localhost";
-    static final int port = 4242;
-    static final String fname = "config";
+	static JLabel label1 = new JLabel("x : " + "0");
+	static JLabel label2 = new JLabel("y : " + "0");
+	static JLabel label3 = new JLabel("z : " + "0");
+	static JLabel xraw  = new JLabel("xraw : ");
+	static JLabel yraw  = new JLabel("yraw : ");
+	static JLabel zraw  = new JLabel("zraw : ");
+	static JSlider sliderX;
+	static JSlider sliderY;
+	static JSlider sliderZ;
+	static JSlider sliderDX;
+	static JSlider sliderDY;
+	static JSlider sliderDZ;
+	static JButton saveButton;
+	static JButton centerButton;
+	static JFrame f;
+	static float MX = 100;
+	static float MY = 100;
+	static float MZ = 100;
+	static float DX = 0;
+	static float DY = 0;
+	static float DZ = 0;
+	static final int M_MIN = 0;
+	static final int M_MAX = 200;
+	static int MX_INIT = 100;
+	static int MY_INIT = 100;
+	static int MZ_INIT = 100;
+	static int DX_INIT = 0;
+	static int DY_INIT = 0;
+	static int DZ_INIT = 0;
+	static final int D_MIN = -300;
+	static final int D_MAX = 300;
+	static final String addr = "localhost";
+	static final int port = 4242;
+	static final String fname = "config";
+	static final int time = 5;
 	
+	public static void main(String[] args) {   	
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				createAndShowGUI();
+			}
+		});
+	}
 	
-    public static void main(String[] args) {   	
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                createAndShowGUI();
-            }
-        });
-    }
-    
-    private static void createAndShowGUI() {
-    	
-    	loadConfig();
-    	
-        System.out.println("Created GUI on EDT? "+
-                SwingUtilities.isEventDispatchThread());
-        JFrame f = new JFrame();
-        
-        JButton button = new JButton();
-        button.addActionListener(new ActionListener(){
+	private static void createAndShowGUI() {
+		
+		loadConfig();
+		
+		System.out.println("Created GUI on EDT? "+
+				SwingUtilities.isEventDispatchThread());
+		f = new JFrame();
+		
+		saveButton = new JButton();
+		saveButton.addActionListener(new ActionListener(){
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				saveConfig();
 			}});
-        button.setText("SAVE");
-        
-        JSlider sliderX = new JSlider(JSlider.HORIZONTAL,
-        		M_MIN, M_MAX, MX_INIT);
-        sliderX.addChangeListener(new ChangeListener(){
+		saveButton.setText("SAVE");
+		
+		sliderX = new JSlider(JSlider.HORIZONTAL,
+				M_MIN, M_MAX, MX_INIT);
+		sliderX.addChangeListener(new ChangeListener(){
 
 			@Override
 			public void stateChanged(ChangeEvent e) {
-			    JSlider source = (JSlider)e.getSource();
-			    if (!source.getValueIsAdjusting()) {
-			        int i = (int)source.getValue();
-			        if (i == 0) {
-			        	MX = 1;
-			        } else {
-			        	MX = (float) i;
-			        }
-			    }
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					int i = (int)source.getValue();
+					if (i == 0) {
+						MX = 1;
+					} else {
+						MX = (float) i;
+					}
+				}
 			}});
-        
-        JSlider sliderY = new JSlider(JSlider.HORIZONTAL,
-        		M_MIN, M_MAX, MY_INIT);
-        sliderY.addChangeListener(new ChangeListener(){
+		
+		sliderY = new JSlider(JSlider.HORIZONTAL,
+				M_MIN, M_MAX, MY_INIT);
+		sliderY.addChangeListener(new ChangeListener(){
 
-        	@Override
-        	public void stateChanged(ChangeEvent e) {
-			    JSlider source = (JSlider)e.getSource();
-			    if (!source.getValueIsAdjusting()) {
-			        int i = (int)source.getValue();
-			        if (i == 0) {
-			        	MY = 1;
-			        } else {
-			        	MY = (float) i;
-			        }
-			    }
-        	}});
-        
-        JSlider sliderZ = new JSlider(JSlider.HORIZONTAL,
-                M_MIN, M_MAX, MZ_INIT);
-        sliderZ.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					int i = (int)source.getValue();
+					if (i == 0) {
+						MY = 1;
+					} else {
+						MY = (float) i;
+					}
+				}
+			}});
+		
+		sliderZ = new JSlider(JSlider.HORIZONTAL,
+				M_MIN, M_MAX, MZ_INIT);
+		sliderZ.addChangeListener(new ChangeListener(){
 
-        	@Override
-        	public void stateChanged(ChangeEvent e) {
-			    JSlider source = (JSlider)e.getSource();
-			    if (!source.getValueIsAdjusting()) {
-			        int i = (int)source.getValue();
-			        if (i == 0) {
-			        	MZ = 1;
-			        } else {
-			        	MZ = (float) i;
-			        }
-			    }
-        	}});
-        
-        JSlider sliderDX = new JSlider(JSlider.HORIZONTAL,
-                D_MIN, D_MAX, DX_INIT);
-        sliderDX.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					int i = (int)source.getValue();
+					if (i == 0) {
+						MZ = 1;
+					} else {
+						MZ = (float) i;
+					}
+				}
+			}});
+		
+		sliderDX = new JSlider(JSlider.HORIZONTAL,
+				D_MIN, D_MAX, DX_INIT);
+		sliderDX.addChangeListener(new ChangeListener(){
 
-        	@Override
-        	public void stateChanged(ChangeEvent e) {
-			    JSlider source = (JSlider)e.getSource();
-			    if (!source.getValueIsAdjusting()) {
-			    	DX = (float) source.getValue();
-			    }
-        	}});
-        
-        JSlider sliderDY = new JSlider(JSlider.HORIZONTAL,
-                D_MIN, D_MAX, DY_INIT);
-        sliderDY.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					DX = (float) source.getValue();
+				}
+			}});
+		
+		sliderDY = new JSlider(JSlider.HORIZONTAL,
+				D_MIN, D_MAX, DY_INIT);
+		sliderDY.addChangeListener(new ChangeListener(){
 
-        	@Override
-        	public void stateChanged(ChangeEvent e) {
-			    JSlider source = (JSlider)e.getSource();
-			    if (!source.getValueIsAdjusting()) {
-			    	DY = (float) source.getValue();
-			    }
-        	}});
-        
-        JSlider sliderDZ = new JSlider(JSlider.HORIZONTAL,
-                D_MIN, D_MAX, DZ_INIT);
-        sliderDZ.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					DY = (float) source.getValue();
+				}
+			}});
+		
+		sliderDZ = new JSlider(JSlider.HORIZONTAL,
+				D_MIN, D_MAX, DZ_INIT);
+		sliderDZ.addChangeListener(new ChangeListener(){
 
-        	@Override
-        	public void stateChanged(ChangeEvent e) {
-			    JSlider source = (JSlider)e.getSource();
-			    if (!source.getValueIsAdjusting()) {
-			    	DZ = (float) source.getValue();
-			    }
-        	}});
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				JSlider source = (JSlider)e.getSource();
+				if (!source.getValueIsAdjusting()) {
+					DZ = (float) source.getValue();
+				}
+			}});
+		
+		centerButton = new JButton();
+		centerButton.addActionListener(new ActionListener(){
 
-        sliderX.setMajorTickSpacing(50);
-        sliderX.setMinorTickSpacing(25);
-        sliderX.setPaintTicks(true);
-        sliderX.setPaintLabels(true);
-        sliderY.setMajorTickSpacing(50);
-        sliderY.setMinorTickSpacing(25);
-        sliderY.setPaintTicks(true);
-        sliderY.setPaintLabels(true);
-        sliderZ.setMajorTickSpacing(50);
-        sliderZ.setMinorTickSpacing(25);
-        sliderZ.setPaintTicks(true);
-        sliderZ.setPaintLabels(true);
-        sliderDX.setMajorTickSpacing(50);
-        sliderDX.setMinorTickSpacing(25);
-        sliderDX.setPaintTicks(true);
-        sliderDX.setPaintLabels(true);
-        sliderDY.setMajorTickSpacing(50);
-        sliderDY.setMinorTickSpacing(25);
-        sliderDY.setPaintTicks(true);
-        sliderDY.setPaintLabels(true);
-        sliderDZ.setMajorTickSpacing(50);
-        sliderDZ.setMinorTickSpacing(25);
-        sliderDZ.setPaintTicks(true);
-        sliderDZ.setPaintLabels(true);
-        
-        JFrame.setDefaultLookAndFeelDecorated(true);
-        f.setLayout(new BoxLayout(f.getContentPane(), BoxLayout.Y_AXIS));
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        f.setMinimumSize(new Dimension(600,600));
-        f.add(label1);
-        f.add(label2);
-        f.add(label3);
-        
-        
-        JLabel lxscale  = new JLabel("xscale");
-        JLabel lyscale  = new JLabel("yscale");
-        JLabel lzscale  = new JLabel("zscale");
-        JLabel lxdelta  = new JLabel("xdelta");
-        JLabel lydelta  = new JLabel("ydelta");
-        JLabel lzdelta  = new JLabel("zdelta");
-        
-        f.add(lxscale);
-        f.add(sliderX);
-        f.add(lyscale);
-        f.add(sliderY);
-        f.add(lzscale);
-        f.add(sliderZ);
-        f.add(lxdelta);
-        f.add(sliderDX);
-        f.add(lydelta);
-        f.add(sliderDY);
-        f.add(lzdelta);
-        f.add(sliderDZ);
-        f.add(button);
-        f.add(xraw);
-        f.add(yraw);
-        f.add(zraw);
-        f.setVisible(true);
-        
-        label1.setFont(new Font("Serif", Font.PLAIN, 24));
-        label2.setFont(new Font("Serif", Font.PLAIN, 24));
-        label3.setFont(new Font("Serif", Font.PLAIN, 24));
-        
-        label1.setAlignmentX(Component.CENTER_ALIGNMENT);
-        label2.setAlignmentX(Component.CENTER_ALIGNMENT);
-        label3.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        lxscale.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lyscale.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lzscale.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        lxdelta.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lydelta.setAlignmentX(Component.CENTER_ALIGNMENT);
-        lzdelta.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        xraw.setAlignmentX(Component.CENTER_ALIGNMENT);
-        yraw.setAlignmentX(Component.CENTER_ALIGNMENT);
-        zraw.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        f.setTitle("Intitializing Kinect...");
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				centerButton.setEnabled(false);
+				centerButton.setText(String.valueOf(time));
+				Timer timer = new Timer();
+				TimerTask task = new TimerTask() {
+					public void run(){
+						sliderDX.setValue((int)(-X * 100));
+						sliderDY.setValue((int)(-Y * 100));
+						sliderDZ.setValue((int)(-Z * 100));
+						centerButton.setEnabled(true);
+						centerButton.setText(String.valueOf("CENTER"));
+					}
+				};
+				
+				for (int t = time; t > 0; t--) {
+					timer.schedule( new TimerTask() {
+						public void run(){
+							centerButton.setText(String.valueOf(Integer.valueOf(centerButton.getText()) - 1));
+						}
+					}
+					, t * 1000 );
+				}
+				timer.schedule( task, time * 1000 );
+			}});
+		centerButton.setText("CENTER");
+
+		sliderX.setMajorTickSpacing(50);
+		sliderX.setMinorTickSpacing(25);
+		sliderX.setPaintTicks(true);
+		sliderX.setPaintLabels(true);
+		sliderY.setMajorTickSpacing(50);
+		sliderY.setMinorTickSpacing(25);
+		sliderY.setPaintTicks(true);
+		sliderY.setPaintLabels(true);
+		sliderZ.setMajorTickSpacing(50);
+		sliderZ.setMinorTickSpacing(25);
+		sliderZ.setPaintTicks(true);
+		sliderZ.setPaintLabels(true);
+		sliderDX.setMajorTickSpacing(50);
+		sliderDX.setMinorTickSpacing(25);
+		sliderDX.setPaintTicks(true);
+		sliderDX.setPaintLabels(true);
+		sliderDY.setMajorTickSpacing(50);
+		sliderDY.setMinorTickSpacing(25);
+		sliderDY.setPaintTicks(true);
+		sliderDY.setPaintLabels(true);
+		sliderDZ.setMajorTickSpacing(50);
+		sliderDZ.setMinorTickSpacing(25);
+		sliderDZ.setPaintTicks(true);
+		sliderDZ.setPaintLabels(true);
+		
+		JFrame.setDefaultLookAndFeelDecorated(true);
+		f.setLayout(new BoxLayout(f.getContentPane(), BoxLayout.Y_AXIS));
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		f.setMinimumSize(new Dimension(600,600));
+		f.add(label1);
+		f.add(label2);
+		f.add(label3);
+		
+		
+		JLabel lxscale  = new JLabel("xscale");
+		JLabel lyscale  = new JLabel("yscale");
+		JLabel lzscale  = new JLabel("zscale");
+		JLabel lxdelta  = new JLabel("xdelta");
+		JLabel lydelta  = new JLabel("ydelta");
+		JLabel lzdelta  = new JLabel("zdelta");
+		
+		f.add(lxscale);
+		f.add(sliderX);
+		f.add(lyscale);
+		f.add(sliderY);
+		f.add(lzscale);
+		f.add(sliderZ);
+		f.add(lxdelta);
+		f.add(sliderDX);
+		f.add(lydelta);
+		f.add(sliderDY);
+		f.add(lzdelta);
+		f.add(sliderDZ);
+		f.add(saveButton);
+		f.add(centerButton);
+		f.add(xraw);
+		f.add(yraw);
+		f.add(zraw);
+		f.setVisible(true);
+		
+		label1.setFont(new Font("Serif", Font.PLAIN, 24));
+		label2.setFont(new Font("Serif", Font.PLAIN, 24));
+		label3.setFont(new Font("Serif", Font.PLAIN, 24));
+		
+		label1.setAlignmentX(Component.CENTER_ALIGNMENT);
+		label2.setAlignmentX(Component.CENTER_ALIGNMENT);
+		label3.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		saveButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+		centerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		lxscale.setAlignmentX(Component.CENTER_ALIGNMENT);
+		lyscale.setAlignmentX(Component.CENTER_ALIGNMENT);
+		lzscale.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		lxdelta.setAlignmentX(Component.CENTER_ALIGNMENT);
+		lydelta.setAlignmentX(Component.CENTER_ALIGNMENT);
+		lzdelta.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		xraw.setAlignmentX(Component.CENTER_ALIGNMENT);
+		yraw.setAlignmentX(Component.CENTER_ALIGNMENT);
+		zraw.setAlignmentX(Component.CENTER_ALIGNMENT);
+		
+		f.setTitle("Intitializing Kinect...");
 		myKinect = new Kinect();
 		if(!myKinect.start(J4KSDK.DEPTH | J4KSDK.SKELETON))
 		{
 			f.setTitle("Kinect not detected");
 			JOptionPane.showMessageDialog(f, "There was no Kinect sensor detected in your system.");
 		} else {
-			f.setTitle("Kinect demo");
+			f.setTitle("opentrackkinnect");
 		}
-    }
+	}
 
 	public static class Kinect extends J4KSDK {
 		
@@ -281,22 +324,22 @@ public class Main {
 				
 				ByteBuffer b = ByteBuffer.allocate(48);
 				b.order(ByteOrder.LITTLE_ENDIAN);
-		        b.putDouble((double) TX);
-		        b.putDouble((double) TY);
-		        b.putDouble((double) TZ);
-		        b.putDouble(0.0);
-		        b.putDouble(0.0);
-		        b.putDouble(0.0);
-		        
-		        label1.setText("x : " + String.format("%.3f", TX));
-		        label2.setText("y : " + String.format("%.3f", TY));
-		        label3.setText("z : " + String.format("%.3f", TZ));
-		        
-		        xraw.setText("xraw : " + String.format("%.3f", X));
-		        yraw.setText("yraw : " + String.format("%.3f", Y));
-		        zraw.setText("zraw : " + String.format("%.3f", Z));
-		        
-		        try {
+				b.putDouble((double) TX);
+				b.putDouble((double) TY);
+				b.putDouble((double) TZ);
+				b.putDouble(0.0);
+				b.putDouble(0.0);
+				b.putDouble(0.0);
+				
+				label1.setText("x : " + String.format("%.3f", TX));
+				label2.setText("y : " + String.format("%.3f", TY));
+				label3.setText("z : " + String.format("%.3f", TZ));
+				
+				xraw.setText("xraw : " + String.format("%.3f", X));
+				yraw.setText("yraw : " + String.format("%.3f", Y));
+				zraw.setText("zraw : " + String.format("%.3f", Z));
+				
+				try {
 					DatagramPacket packet = new DatagramPacket(b.array(), b.capacity(),
 							InetAddress.getByName(addr), port);
 					DatagramSocket dsocket = new DatagramSocket();
@@ -319,11 +362,11 @@ public class Main {
 	}
 	
 	public static void loadConfig() {
-    	File f = new File(fname);
-    	if (f.exists()) {
-    		FileInputStream fis = null;
-    		byte[] barray;
-    		try {
+		File f = new File(fname);
+		if (f.exists()) {
+			FileInputStream fis = null;
+			byte[] barray;
+			try {
 				fis = new FileInputStream (f);
 				barray = new byte [24];
 				fis.read(barray, 0, 24);
@@ -336,12 +379,12 @@ public class Main {
 				DX = b.getFloat();
 				DY = b.getFloat();
 				DZ = b.getFloat();
-			    MX_INIT = (int) MX;
-			    MY_INIT = (int) MY;
-			    MZ_INIT = (int) MZ;
-			    DX_INIT = (int) DX;
-			    DY_INIT = (int) DY;
-			    DZ_INIT = (int) DZ;
+				MX_INIT = (int) MX;
+				MY_INIT = (int) MY;
+				MZ_INIT = (int) MZ;
+				DX_INIT = (int) DX;
+				DY_INIT = (int) DY;
+				DZ_INIT = (int) DZ;
 				
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -359,13 +402,13 @@ public class Main {
 	public static void saveConfig() {
 		File f = new File(fname);
 		ByteBuffer b = ByteBuffer.allocate(24);
-        b.putFloat(MX);
-        b.putFloat(MY);
-        b.putFloat(MZ);
-        b.putFloat(DX);
-        b.putFloat(DY);
-        b.putFloat(DZ);
-        FileOutputStream fos = null;
+		b.putFloat(MX);
+		b.putFloat(MY);
+		b.putFloat(MZ);
+		b.putFloat(DX);
+		b.putFloat(DY);
+		b.putFloat(DZ);
+		FileOutputStream fos = null;
 		try {
 			fos = new FileOutputStream(f);
 			fos.write(b.array());
