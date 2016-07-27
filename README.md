@@ -1,6 +1,9 @@
 # opentrackkinect
 
-You need J4K library and MS KINECT SDK V2. App tested only with Kinect V2.
+You need:
+- J4K library (already included).
+- MS KINECT SDK V1.8 for kinect v1 [link](https://www.microsoft.com/en-us/download/details.aspx?id=40278).
+- MS KINECT SDK V2 for kinect v2 [link](https://www.microsoft.com/en-us/download/details.aspx?id=44561).
 
 In opentrack app:
 
